@@ -1,6 +1,6 @@
 import discord
 
-from discord_components import DiscordComponents, Button, ButtonStyle
+from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
 from discord.ext import commands
 
 token = open("TOKEN.txt", "r").readline()
@@ -31,6 +31,7 @@ async def info(ctx):
         If such a form doesn't exist, you can __contact the site's DMCA agent directly__ or __reach out to the web host or ISP__.
 
         Type **!email** to learn more about DMCA takedown emails.
+        Type **!contacts** to quickly access contact information for DMCA claims.
         Type **!forms** for help with DMCA forms for a particular site.
         """,
         color=embed_color
@@ -168,5 +169,90 @@ async def email(ctx):
     )
 
     await final_step_interaction.send(embed=dmca_email)
+
+@bot.command()
+async def contacts(ctx):
+    contacts_dropdown = Select(
+        placeholder="Choose one...",
+        options=[
+            SelectOption(label="OpenSea", value="OpenSea"),
+            SelectOption(label="Tumblr", value="Tumblr"),
+            SelectOption(label="DeviantArt", value="DeviantArt")
+        ],
+        custom_id="contacts_dropdown"
+    )
+    await ctx.send(
+        "Select a site to view contact information for DMCA claims.",
+        components=[contacts_dropdown]
+    )
+
+    contacts_interaction = await bot.wait_for(
+        "select_option", check=lambda i: i.custom_id == "contacts_dropdown"
+    )
+
+    if contacts_interaction.values[0] == "OpenSea":
+        opensea = discord.Embed(
+            title="Contacting OpenSea about Copyright Infringement",
+            description="""
+
+            You can email your copyright request to __copyright@opensea.io__.
+
+            You can also mail your request to the following address:
+
+            Ozone Networks, Inc.
+            Attn: Copyright Agent
+            228 Park Ave S, #22014
+            New York, NY 10003
+
+            Note that only copyright owners and their legal representatives are eligible to submit a valid takedown request. OpenSea does not respond to takedown requests submitted by third party individuals.
+
+            Source: [OpenSea Support Website](https://support.opensea.io/hc/en-us/articles/4412092785043-What-can-I-do-if-my-copyrighted-works-are-being-sold-without-my-permission-)
+            """,
+            color=embed_color            
+        )
+        await contacts_interaction.send(embed=opensea)
+    elif contacts_interaction.values[0] == "Tumblr":
+        tumblr = discord.Embed(
+            title="Contacting Tumblr about Copyright Infringement",
+            description="""
+
+            You can email your copyright request to __dmca@tumblr.com__.
+
+            You can also mail your request to the following address:
+
+            Tumblr, Inc. (Automattic)
+            60 29th Street #343
+            San Francisco, CA 94110
+            Attn: Copyright Agent
+
+            Note that only copyright owners and their legal representatives are eligible to submit a valid takedown request.
+
+            Source: [Tumblr Support Website](https://www.tumblr.com/policy/en/terms-of-service#dmca)
+            """,
+            color=embed_color            
+        )        
+        await contacts_interaction.send(embed=tumblr)
+    elif contacts_interaction.values[0] == "DeviantArt":
+        deviantart = discord.Embed(
+            title="Contacting DeviantArt about Copyright Infringement",
+            description="""
+
+            You can email your copyright request to __violations@deviantart.com__.
+
+            You can also mail your request to the following address:
+
+            DMCA Complaints
+            DeviantArt, Inc.
+            attn. Daniel Sowers Jr
+            7111 Santa Monica Blvd, Ste B, PO Box 230
+            West Hollywood, CA 90046
+
+            Note that only copyright owners and their legal representatives are eligible to submit a valid takedown request.
+
+            Source: [DeviantArt Support Website](https://www.deviantart.com/about/policy/copyright/)
+            """,
+            color=embed_color            
+        )        
+        await contacts_interaction.send(embed=deviantart)        
 
 bot.run(token)
