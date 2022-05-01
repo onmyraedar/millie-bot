@@ -2,6 +2,7 @@ import discord
 
 from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
 from discord.ext import commands
+from splinter import Browser
 
 token = open("TOKEN.txt", "r").readline()
 
@@ -117,7 +118,7 @@ async def email(ctx):
     final_step = discord.Embed(
         title="Thank you!",
         description="""
-        Click the button below to generate your DMCA takedown email.
+        Click the button below to generate your DMCA takedown notice.
 
         Before you send the email to a DMCA agent, replace the fields in bold with your personal contact information.
 
@@ -254,5 +255,131 @@ async def contacts(ctx):
             color=embed_color            
         )        
         await contacts_interaction.send(embed=deviantart)        
+
+@bot.command()
+async def forms(ctx):
+
+    #Introduction
+
+    intro = discord.Embed(
+        title="Many service providers have DMCA forms that can help you file a complaint easily.",
+        description="""
+        Please select your desired service provider from the dropdown below.
+        Then I'll ask you a few questions to help you fill out their DMCA form.
+        """,
+        color=embed_color
+    )
+    forms_dropdown = Select(
+        placeholder="Choose one...",
+        options=[
+            SelectOption(label="Tumblr", value="Tumblr"),
+        ],
+        custom_id="forms_dropdown"
+    )
+    await ctx.send(embed=intro, components=[forms_dropdown])
+
+    forms_interaction = await bot.wait_for(
+        "select_option", check=lambda i: i.custom_id == "forms_dropdown"
+    )    
+
+    await forms_interaction.send(content="Let's begin!")
+
+    if forms_interaction.values[0] == "Tumblr":
+    
+        #Step 1: Describe your content
+
+        step_1 = discord.Embed(
+            title="Step 1: Describe your content",
+            description="""
+            Provide a description of the content that is being infringed upon.
+
+            *__Example:__ a digital painting of a young lady sitting down at a table, wearing a lavender shirt and headphones, with her laptop open in front of her...*
+            """,
+            color=embed_color
+        )    
+
+        await ctx.send(embed=step_1)
+
+        step_1_interaction = await bot.wait_for(
+            "message", check=lambda msg: msg.author == ctx.author
+        )
+
+        # Step 2: Original links
+
+        step_2 = discord.Embed(
+            title="Step 2: Original links to your content",
+            description="""
+            Please provide the link(s) where *you*, the creator, originally posted your content.
+            """,
+            color=embed_color
+        )   
+
+        await ctx.send(embed=step_2)   
+
+        step_2_interaction = await bot.wait_for(
+            "message", check=lambda msg: msg.author == ctx.author
+        )
+
+        # Step 3: Location of the infringing content on Tumblr
+
+        step_3 = discord.Embed(
+            title="Step 3: Location of the infringing content on Tumblr",
+            description="""
+            Please provide the link(s) to the Tumblr blog where *the infringing (stolen) copy of the content* is located.
+
+            *__Example:__ https://blog.tumblr.com/post/123456*
+            """,
+            color=embed_color
+        )   
+
+        await ctx.send(embed=step_3)   
+
+        step_3_interaction = await bot.wait_for(
+            "message", check=lambda msg: msg.author == ctx.author
+        )
+
+        # Final step: Go to the company's DMCA website
+
+        final_step = discord.Embed(
+            title="Continue to Tumblr's DMCA form to fill out your personal contact information.",
+            description="""
+            Click the button below to continue to Tumblr's DMCA form.
+            """,
+            color=embed_color        
+        )
+        
+        online_form_btn = Button(style=ButtonStyle.green, label="🌐 Go to Tumblr DMCA form", custom_id="online_form_btn")
+
+        await ctx.send(embed=final_step,components=[online_form_btn])
+
+        final_step_interaction = await bot.wait_for(
+            "button_click", check=lambda i: i.custom_id == "online_form_btn"
+        )
+
+        content_description = step_1_interaction.content
+        original_links = step_2_interaction.content
+        infringing_links = step_3_interaction.content
+
+        browser = Browser('chrome')
+        browser.visit("https://www.tumblr.com/dmca")
+        description_box = browser.find_by_id("textarea_description").first
+        description_box.fill(f"{content_description}") # Description of content
+        original_links_box = browser.find_by_id("input_add_url").first
+        original_links_box.fill(f"{original_links}")    # Links to your original content
+        infringing_links_box = browser.find_by_id("infringing_url_popover").first
+        infringing_links_box.fill(f"{infringing_links}") # Links to the infringing content
+
+        complete = discord.Embed(
+            title="What's next?",
+            description="""
+            Two things can happen next:
+            1. Tumblr takes down the content you reported as stolen.
+            2. If the alleged infringer does not think that their activity is infringing, they may file a DMCA counter-notice. Click [here](https://copyrightalliance.org/education/copyright-law-explained/the-digital-millennium-copyright-act-dmca/dmca-counter-notice-process/) to read more about counter-notices.
+            """,
+            color=embed_color        
+        )   
+
+        await ctx.send(embed=complete)     
+    
 
 bot.run(token)
